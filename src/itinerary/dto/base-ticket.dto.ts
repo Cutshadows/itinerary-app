@@ -8,7 +8,7 @@ enum TicketType {
   TAXI = 'taxi',
   OTHER = 'other',
 }
-export class TicketsDto {
+export class BaseTicketDto {
   @ApiProperty({
     type: String,
     description: 'The origin of the ticket',
@@ -28,10 +28,4 @@ export class TicketsDto {
     example: TicketType.AIRPLANE,
   })
   type: TicketType;
-  @ApiProperty({
-    type: Object,
-    description: 'Detail of ticket',
-    example: { seat: '1A', gate: 'B12' },
-  })
-  details?: object;
 }
