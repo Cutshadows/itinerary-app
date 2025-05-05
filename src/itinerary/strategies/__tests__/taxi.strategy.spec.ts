@@ -1,10 +1,10 @@
-import { BoatStrategy } from '../boat.strategy';
+import { TaxiStrategy } from '../taxi.strategy';
 
-describe('BoatStrategy', () => {
-  let strategy: BoatStrategy;
+describe('TaxiStrategy', () => {
+  let strategy: TaxiStrategy;
 
   beforeEach(() => {
-    strategy = new BoatStrategy();
+    strategy = new TaxiStrategy();
   });
 
   it('should return boat tickets', () => {

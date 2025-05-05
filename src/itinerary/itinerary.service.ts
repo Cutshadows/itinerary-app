@@ -5,7 +5,7 @@ import { TicketDto } from './dto/ticket.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Itinerary } from './entities/Itinerary.entity';
 import { Repository } from 'typeorm';
-import { v4 as uuuid } from 'uuid';
+import { v4 as uuid } from 'uuid';
 
 @Injectable()
 export class ItineraryService {
@@ -18,10 +18,12 @@ export class ItineraryService {
 
   async createItinerary(tickets: TicketDto[]) {
     const sorted = this.sortTickets(tickets);
-    const itineraryId = uuuid();
+    const itineraryId = `itinerary-${uuid().slice(uuid().length - 6, uuid().length - 1)}`;
 
     const itinerary = this.itineraryRepo.create({
+      id: itineraryId,
       sorted,
+      createdAt: new Date(),
     });
 
     await this.itineraryRepo.save(itinerary);

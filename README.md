@@ -82,7 +82,33 @@ $ npm run test:cov
 
 ### In addition create a context that Is used in the separation of ticket to create the arrange list (sorted)
 
+```bash
+src/itinerary
+├── itinerary.context.ts
+```
+
 ### MongoDB
+
+I decided to move forward through a document database like MongoDB because, I believe it's the best way to manage a dynamic @body ( ticketsDto) in my personal opinion. It could allow extensibility if we add a new ticket type with a different transportType. I configured with typeOrm
+
+```bash
+#//!bash
+# configuration in app.module
+ TypeOrmModule.forRoot({
+      type: 'mongodb',
+      username: process.env.MONGO_INITDB_ROOT_USERNAME,
+      password: process.env.MONGO_INITDB_ROOT_PASSWORD,
+      url: process.env.MONGO_URL,
+      entities: [__dirname + '/**/*.entity{.ts,.js}'],
+      synchronize: true,
+      database: process.env.MONGO_DATABASE,
+    }),
+
+#configuration in itinerary.module
+imports: [TypeOrmModule.forFeature([Itinerary])],
+# Ensure TypeOrmModule is properly imported
+
+```
 
 ## Stay in touch
 

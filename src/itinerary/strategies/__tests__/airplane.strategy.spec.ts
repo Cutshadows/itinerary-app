@@ -1,13 +1,13 @@
-import { BoatStrategy } from '../boat.strategy';
+import { AirPlaneStrategy } from '../airplane.strategy';
 
-describe('BoatStrategy', () => {
-  let strategy: BoatStrategy;
+describe('AirPlaneStrategy', () => {
+  let strategy: AirPlaneStrategy;
 
   beforeEach(() => {
-    strategy = new BoatStrategy();
+    strategy = new AirPlaneStrategy();
   });
 
-  it('should return boat tickets', () => {
+  it('should return airplane tickets', () => {
     const tickets = strategy.getTickets();
     expect(tickets).toEqual(['Boat Ticket #1', 'Boat Ticket #2']);
   });

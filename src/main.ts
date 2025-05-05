@@ -1,4 +1,5 @@
 import { NestFactory } from '@nestjs/core';
+import * as dotenv from 'dotenv';
 import { AppModule } from './app.module';
 import {
   DocumentBuilder,
@@ -7,6 +8,7 @@ import {
 } from '@nestjs/swagger';
 import { ConsoleLogger } from '@nestjs/common';
 import helmet from 'helmet';
+dotenv.config();
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
@@ -31,9 +33,9 @@ async function bootstrap() {
     .setDescription(
       "API for sorting and managing Kevin McCallister's itinerary.",
     )
-    .setVersion('1.0')
+    .setVersion(process.env.npm_package_version || '1.0.0')
     // .addBearerAuth()
-    .addTag('itinerary')
+    .addTag(process.env.npm_package_name || 'itinerary-rest-api')
     .build();
 
   const options: SwaggerDocumentOptions = {
