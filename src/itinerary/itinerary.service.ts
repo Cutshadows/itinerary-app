@@ -6,8 +6,6 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Itinerary } from './entities/Itinerary.entity';
 import { Repository } from 'typeorm';
 import { v4 as uuid } from 'uuid';
-import { getCoordinates } from 'src/utils/geocoder.utils';
-import { TransportType } from './dto/base-ticket.dto';
 
 @Injectable()
 export class ItineraryService {
@@ -20,10 +18,12 @@ export class ItineraryService {
     private readonly itineraryContext: ItineraryContext,
   ) {}
 
-  async createItinerary(tickets: TicketDto[]): Promise<any> {
+  createItinerary(tickets: TicketDto[]): any {
     // { id: string; createdAt: Date }
-    console.log('tickets', tickets);
-    const mappedTicket = await this.mapTicketCoords(tickets);
+    // const mappedTicket = await this.mapTicketCoords(tickets);
+    // const enhanced = enhanceWithDistance(mappedTicket as any);
+    const sddf = this.findItinerary(tickets);
+    const sorted = this.sortItinerary(tickets);
     const itineraryId = `itinerary-${uuid().slice(uuid().length - 6, uuid().length - 1)}`;
 
     const itinerary = this.itineraryRepo.create({
@@ -33,61 +33,80 @@ export class ItineraryService {
     });
 
     // await this.itineraryRepo.save(itinerary);
-    return { id: itineraryId, mappedTicket, createdAt: itinerary.createdAt };
+    return {
+      id: itineraryId,
+      sorted,
+      sddf,
+      createdAt: itinerary.createdAt,
+    };
   }
 
-  //   sortTickets(tickets: TicketDto[]): TicketDto[] {
-  //   sortTickets(tickets: TicketDto[]) {
-  //     tickets.forEach((ticket) => {
-  //       if (!this.graph[ticket.from]) {
-  //         this.graph[ticket.from] = ticket;
-  //       }
-  //     });
-  //     // const fromMap = new Map<string, TicketDto>();
-  //     // const toSet = new Set<string>();
-  //     // tickets.forEach((ticket) => {
-  //     //   fromMap.set(ticket.from, ticket);
-  //     //   toSet.add(ticket.to);
-  //     // });
-  //     // let start: TicketDto | undefined = tickets.find((ticket) => {
-  //     //   return !toSet.has(ticket.from);
-  //     // });
-  //     // if (!start) {
-  //     //   new Error('No starting point found');
-  //     // }
-  //     // const sorted: TicketDto[] = [];
-  //     // while (start && fromMap.has(start.from)) {
-  //     //   const ticket = fromMap.get(start.from);
-  //     //   sorted.push(ticket as TicketDto);
-  //     //   start = ticket?.to ? fromMap.get(ticket.to) : undefined;
-  //     // }
-  //     // return sorted;
-  //   }
+  sortItinerary(tickets: TicketDto[]): TicketDto[] {
+    const fromMap = new Map<
+      string,
+      TicketDto & {
+        coords?: { from: (number | undefined)[]; to: (number | undefined)[] };
+      }
+    >();
+    const toSet = new Set<string>();
 
-  async mapTicketCoords(tickets: TicketDto[]) {
-    try {
-      const mapped = await Promise.all(
-        tickets.map(async (ticket) => {
-          if (ticket.type !== TransportType.OTHER) {
-            const [fromCoords, toCoords] = await Promise.all([
-              getCoordinates(ticket.from),
-              getCoordinates(ticket.to),
-            ]);
-            return {
-              ...ticket,
-              coords: {
-                from: [fromCoords.latitude, fromCoords.longitude],
-                to: [toCoords.latitude, toCoords.longitude],
-              },
-            };
-          }
-          return ticket;
-        }),
-      );
-      return mapped;
-    } catch (error) {
-      console.log('Error mapping coordinates:', error);
-      throw new Error('Error fetching coordinates');
+    for (const ticket of tickets) {
+      fromMap.set(ticket.from, ticket);
+      toSet.add(ticket.to);
+    }
+
+    // console.log('fromMap', fromMap);
+
+    const start = tickets.find((ticket) => ticket.isOrigin && ticket);
+
+    const sorted: TicketDto[] = [];
+    let current = start;
+
+    while (current) {
+      sorted.push(current);
+      current = findNextTicket(current.to, fromMap);
+      //   current = next!;
+    }
+
+    return sorted;
+  }
+  findItinerary(tickets: TicketDto[]): string[] {
+    const origin =
+      (tickets.map((ticket) => ticket.isOrigin && ticket)[0] as TicketDto) ||
+      tickets[0];
+    const graph: Record<string, TicketDto[]> = {};
+    //   tickets.sort((a, b) => {
+    //     return a.to.localeCompare(b.to);
+    //   });
+    for (const ticket of tickets) {
+      graph[ticket.from] = graph[ticket.from] || [];
+      graph[ticket.from].push(ticket);
+    }
+    const ans: string[] = [];
+    const depthFirstSearch = (from: TicketDto['from']) => {
+      while (graph[from] && graph[from].length) {
+        const tos = graph[from].pop()!;
+        depthFirstSearch(tos.to);
+      }
+      ans.push(from);
+    };
+    depthFirstSearch(origin.from);
+    return ans.reverse();
+  }
+}
+
+function findNextTicket(
+  currentTo: string,
+  map: Map<string, TicketDto>,
+): TicketDto | undefined {
+  if (map.has(currentTo)) return map.get(currentTo);
+
+  // Fallback: look for a partial match (e.g., contains "Venezia")
+  for (const [from, ticket] of map.entries()) {
+    if (from.includes(currentTo) || currentTo.includes(from)) {
+      return ticket;
     }
   }
+
+  return undefined;
 }
