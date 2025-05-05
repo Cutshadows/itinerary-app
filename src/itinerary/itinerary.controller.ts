@@ -36,8 +36,11 @@ export class ItineraryController {
     status: 201,
     description: 'Tickets submitted successfully',
   })
-  async createItinerary(@Body() tickets: TicketDto[]): Promise<TicketDto[]> {
-    return Promise.resolve(tickets);
+  async createItinerary(
+    @Body() tickets: TicketDto[],
+  ): Promise<{ itineraryId: string; sorted: TicketDto[] }> {
+    console.log('Received tickets:', tickets);
+    return await this.itineraryService.createItinerary(tickets);
   }
 
   @Get(':id')
@@ -47,6 +50,18 @@ export class ItineraryController {
     description: 'Sorted itinerary',
   })
   getTickets(@Param('id') id: string): TicketDto[] {
+    return [];
+  }
+
+  @Get(':id/readable')
+  @ApiOperation({
+    summary: 'Retrieve previously sorted itinerary with human readable',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Human-readable sorted itinerary',
+  })
+  getTicketSorted(): TicketDto[] {
     return [];
   }
 }

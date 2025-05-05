@@ -54,6 +54,10 @@ export class TicketRenderFactory {
           return this.context.render(ticket);
         };
       case TransportType.OTHER:
+        return (ticket: TicketDto): string => {
+          this.context.setStrategy(this.taxi);
+          return this.context.render(ticket);
+        };
       default:
         throw new Error('Unknown ticket type');
     }

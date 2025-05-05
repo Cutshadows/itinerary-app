@@ -5,23 +5,30 @@ import { TicketDto } from './dto/ticket.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Itinerary } from './entities/Itinerary.entity';
 import { Repository } from 'typeorm';
+import { v4 as uuuid } from 'uuid';
 
 @Injectable()
 export class ItineraryService {
   constructor(
     @InjectRepository(Itinerary)
-    private readonly itineraryRepository: Repository<Itinerary>,
+    private readonly itineraryRepo: Repository<Itinerary>,
     private readonly ticketRenderFactory: TicketRenderFactory,
     private readonly itineraryContext: ItineraryContext,
   ) {}
 
-  createItinerary(tickets: TicketDto[]) {
-    const sortedTickets = this.sortTickets(tickets);
-    // const itineraryKey = this.generateItineraryKey(sortedTickets);
-    // this.itineraries.set(itineraryKey, sortedTickets);
+  async createItinerary(tickets: TicketDto[]) {
+    const sorted = this.sortTickets(tickets);
+    const itineraryId = uuuid();
+
+    const itinerary = this.itineraryRepo.create({
+      sorted,
+    });
+
+    await this.itineraryRepo.save(itinerary);
+    return { itineraryId, sorted };
   }
 
-  sortTickets(tickets: TicketDto[]): Promise<TicketDto[]> {
+  sortTickets(tickets: TicketDto[]): TicketDto[] {
     const fromMap = new Map<string, TicketDto>();
     const toSet = new Set<string>();
 
@@ -30,14 +37,17 @@ export class ItineraryService {
       toSet.add(ticket.to);
     });
 
-    let start = tickets.find((ticket) => !toSet.has(ticket.from))?.from;
-    if (!start) throw new Error('Invalid ticket chain');
-
+    let start: TicketDto | undefined = tickets.find((ticket) => {
+      return !toSet.has(ticket.from);
+    });
+    if (!start) {
+      return [];
+    }
     const sorted: TicketDto[] = [];
-    while (fromMap.has(start)) {
-      const ticket = fromMap.get(start);
-      sorted.push(ticket);
-      start = ticket.to;
+    while (start && fromMap.has(start.from)) {
+      const ticket = fromMap.get(start.from);
+      sorted.push(ticket as TicketDto);
+      start = ticket?.to ? fromMap.get(ticket.to) : undefined;
     }
     return sorted;
   }
