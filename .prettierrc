@@ -1,4 +1,6 @@
 {
-  "singleQuote": true,
-  "trailingComma": "all"
+	"singleQuote": true,
+	"maxLineLength": 100,
+	"semi": true,
+	"trailingComma": "all"
 }
