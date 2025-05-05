@@ -5,15 +5,27 @@ import {
   SwaggerDocumentOptions,
   SwaggerModule,
 } from '@nestjs/swagger';
+import { ConsoleLogger } from '@nestjs/common';
+import helmet from 'helmet';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, {
+    logger: new ConsoleLogger({
+      prefix: 'itinerary-app',
+      json: true,
+      timestamp: true,
+      colors: true,
+      logLevels: ['error', 'warn', 'log', 'debug', 'verbose'],
+    }),
+  });
+  app.use(helmet());
   app.enableCors({
     origin: '*',
     methods: 'GET,HEAD,POST',
     preflightContinue: false,
   });
   app.setGlobalPrefix('api');
+
   const config = new DocumentBuilder()
     .setTitle('Kevin Itinerary API')
     .setDescription(

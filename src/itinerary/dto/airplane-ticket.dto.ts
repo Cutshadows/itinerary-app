@@ -4,7 +4,7 @@ import { BaseTicketDto } from './base-ticket.dto';
 export class AirplaneTicketDto extends BaseTicketDto {
   @ApiProperty({
     type: Number,
-    description: 'Boarding gate number',
+    description: 'From gate number',
     example: 19,
   })
   gate: number;
@@ -17,13 +17,13 @@ export class AirplaneTicketDto extends BaseTicketDto {
   @ApiProperty({
     type: String,
     description: 'Self-check-in observation',
-    example: 'Check-in at the airport',
+    example: 'Self-check-in at the counter',
   })
   observation?: string;
   @ApiProperty({
     type: String,
     description: 'Flight number',
-    example: 'AA123',
+    example: 'AA904',
   })
   flightNumber: string;
 }

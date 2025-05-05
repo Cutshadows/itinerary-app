@@ -4,8 +4,14 @@ import { BaseTicketDto } from './base-ticket.dto';
 export class BusTicketDto extends BaseTicketDto {
   @ApiProperty({
     type: String,
-    description: 'detail of the bus ticket',
-    example: 'No seat assigned',
+    description: 'bus identifier number',
+    example: '1234',
   })
-  observation?: string;
+  identifier: string;
+  @ApiProperty({
+    type: String,
+    description: 'bus seat number',
+    example: '14a',
+  })
+  seat?: string;
 }

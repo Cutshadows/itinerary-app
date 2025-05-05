@@ -1,6 +1,7 @@
 import { Body, Controller, Get, Param, Post } from '@nestjs/common';
 import {
   ApiBody,
+  ApiExtraModels,
   ApiOperation,
   ApiResponse,
   ApiTags,
@@ -11,11 +12,13 @@ import { AirplaneTicketDto } from './dto/airplane-ticket.dto';
 import { TrainTicketDto } from './dto/train-ticket.dto';
 import { BusTicketDto } from './dto/bus-ticket.dto';
 import { TramTicketDto } from './dto/tram-ticket.dto';
+import { ItineraryService } from './itinerary.service';
 
+@ApiExtraModels(AirplaneTicketDto, TrainTicketDto, BusTicketDto, TramTicketDto)
 @ApiTags('itinerary')
 @Controller('itinerary')
 export class ItineraryController {
-  constructor() {}
+  constructor(private itineraryService: ItineraryService) {}
 
   @Post()
   @ApiOperation({ summary: 'Submit unsorted tickets' })
@@ -32,11 +35,8 @@ export class ItineraryController {
   @ApiResponse({
     status: 201,
     description: 'Tickets submitted successfully',
-    // type: [TicketDto],
   })
   async createItinerary(@Body() tickets: TicketDto[]): Promise<TicketDto[]> {
-    // Here you would typically save the tickets to a database or process them
-    // For this example, we'll just return the tickets
     return Promise.resolve(tickets);
   }
 

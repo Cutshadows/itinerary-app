@@ -1,31 +1,32 @@
 import { ApiProperty } from '@nestjs/swagger';
 
-enum TicketType {
+export enum TransportType {
   AIRPLANE = 'airplane',
   TRAIN = 'train',
   BUS = 'bus',
   BOAT = 'boat',
   TAXI = 'taxi',
   OTHER = 'other',
+  TRAM = 'TRAM',
 }
 export class BaseTicketDto {
   @ApiProperty({
     type: String,
     description: 'The origin of the ticket',
-    example: 'from St. Anton, Austria',
+    example: 'Innsbruck Airport',
   })
   from: string;
   @ApiProperty({
     type: String,
     description: 'Destiny of the ticket',
-    example: 'to St. Anton, Austria',
+    example: 'Venice Airport',
   })
   to: string;
   @ApiProperty({
-    enum: TicketType,
-    enumName: 'TicketType',
-    description: 'Destiny of the ticket',
-    example: TicketType.AIRPLANE,
+    enum: TransportType,
+    enumName: 'TransportType',
+    description: 'Airplanne, train, bus, tram, taxi, or other',
+    example: TransportType.AIRPLANE,
   })
-  type: TicketType;
+  type: TransportType;
 }
