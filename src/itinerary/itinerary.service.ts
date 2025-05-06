@@ -9,6 +9,8 @@ import { v4 as uuid } from 'uuid';
 
 @Injectable()
 export class ItineraryService {
+  private graph: Record<string, TicketDto> = {};
+  private itinerary: TicketDto[] = [];
   constructor(
     @InjectRepository(Itinerary)
     private readonly itineraryRepo: Repository<Itinerary>,
@@ -16,41 +18,94 @@ export class ItineraryService {
     private readonly itineraryContext: ItineraryContext,
   ) {}
 
-  async createItinerary(tickets: TicketDto[]) {
-    const sorted = this.sortTickets(tickets);
+  async createItinerary(tickets: TicketDto[]): Promise<{
+    id: string;
+    sorted: TicketDto[];
+    searchHeap: string[];
+    createdAt: Date;
+  }> {
+    const searchHeap = this.findItinerary(tickets);
+    const sorted = this.sortItinerary(tickets);
     const itineraryId = `itinerary-${uuid().slice(uuid().length - 6, uuid().length - 1)}`;
 
     const itinerary = this.itineraryRepo.create({
       id: itineraryId,
-      sorted,
+      //   sorted,
       createdAt: new Date(),
     });
 
     await this.itineraryRepo.save(itinerary);
-    return { itineraryId, sorted };
+    return {
+      id: itineraryId,
+      sorted,
+      searchHeap,
+      createdAt: itinerary.createdAt,
+    };
   }
 
-  sortTickets(tickets: TicketDto[]): TicketDto[] {
-    const fromMap = new Map<string, TicketDto>();
+  sortItinerary(tickets: TicketDto[]): TicketDto[] {
+    const fromMap = new Map<
+      string,
+      TicketDto & {
+        coords?: { from: (number | undefined)[]; to: (number | undefined)[] };
+      }
+    >();
     const toSet = new Set<string>();
 
-    tickets.forEach((ticket) => {
+    for (const ticket of tickets) {
       fromMap.set(ticket.from, ticket);
       toSet.add(ticket.to);
-    });
+    }
 
-    let start: TicketDto | undefined = tickets.find((ticket) => {
-      return !toSet.has(ticket.from);
-    });
-    if (!start) {
-      return [];
-    }
+    const start = tickets.find((ticket) => ticket.isOrigin && ticket);
+
     const sorted: TicketDto[] = [];
-    while (start && fromMap.has(start.from)) {
-      const ticket = fromMap.get(start.from);
-      sorted.push(ticket as TicketDto);
-      start = ticket?.to ? fromMap.get(ticket.to) : undefined;
+    let current = start;
+
+    while (current) {
+      sorted.push(current);
+      current = findNextTicket(current.to, fromMap);
     }
+
     return sorted;
   }
+  findItinerary(tickets: TicketDto[]): string[] {
+    const origin =
+      (tickets.map((ticket) => ticket.isOrigin && ticket)[0] as TicketDto) ||
+      tickets[0];
+    const graph: Record<string, TicketDto[]> = {};
+    //   tickets.sort((a, b) => {
+    //     return a.to.localeCompare(b.to);
+    //   });
+    for (const ticket of tickets) {
+      graph[ticket.from] = graph[ticket.from] || [];
+      graph[ticket.from].push(ticket);
+    }
+    const ans: string[] = [];
+    const depthFirstSearch = (from: TicketDto['from']) => {
+      while (graph[from] && graph[from].length) {
+        const tos = graph[from].pop()!;
+        depthFirstSearch(tos.to);
+      }
+      ans.push(from);
+    };
+    depthFirstSearch(origin.from);
+    return ans.reverse();
+  }
+}
+
+function findNextTicket(
+  currentTo: string,
+  map: Map<string, TicketDto>,
+): TicketDto | undefined {
+  if (map.has(currentTo)) return map.get(currentTo);
+
+  // Fallback: look for a partial match (e.g., contains "Venezia")
+  for (const [from, ticket] of map.entries()) {
+    if (from.includes(currentTo) || currentTo.includes(from)) {
+      return ticket;
+    }
+  }
+
+  return undefined;
 }

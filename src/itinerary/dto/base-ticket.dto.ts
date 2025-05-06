@@ -3,11 +3,11 @@ import { ApiProperty } from '@nestjs/swagger';
 export enum TransportType {
   AIRPLANE = 'airplane',
   TRAIN = 'train',
+  TRAM = 'tram',
   BUS = 'bus',
   BOAT = 'boat',
   TAXI = 'taxi',
   OTHER = 'other',
-  TRAM = 'TRAM',
 }
 export class BaseTicketDto {
   @ApiProperty({
@@ -25,8 +25,14 @@ export class BaseTicketDto {
   @ApiProperty({
     enum: TransportType,
     enumName: 'TransportType',
-    description: 'Airplanne, train, bus, tram, taxi, or other',
+    description: 'Airplanne, train, bus, tram, taxi',
     example: TransportType.AIRPLANE,
   })
   type: TransportType;
+  @ApiProperty({
+    description: 'boolean value to indicate if the ticket is origin',
+    type: Boolean,
+    default: false,
+  })
+  isOrigin?: TransportType;
 }

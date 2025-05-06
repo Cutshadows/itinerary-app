@@ -36,11 +36,12 @@ export class ItineraryController {
     status: 201,
     description: 'Tickets submitted successfully',
   })
-  async createItinerary(
-    @Body() tickets: TicketDto[],
-  ): Promise<{ itineraryId: string; sorted: TicketDto[] }> {
-    console.log('Received tickets:', tickets);
-    return await this.itineraryService.createItinerary(tickets);
+  createItinerary(@Body() tickets: TicketDto[]): Promise<{
+    id: string;
+    // sorted: TicketDto[];
+    createdAt: Date;
+  }> {
+    return this.itineraryService.createItinerary(tickets);
   }
 
   @Get(':id')

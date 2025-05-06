@@ -5,9 +5,6 @@ import { TaxiTicketDto } from '../dto/taxi-ticket.dto';
 @Injectable()
 export class TaxiStrategy implements TransportStrategy {
   render(ticket: TaxiTicketDto): string {
-    return (
-      `Take taxi from ${ticket.from} to ${ticket.to}.\n` +
-      `with the driver ${ticket.driverName} and license plate ${ticket.licensePlate}.\n`
-    );
+    return `Take taxi from ${ticket.from} to ${ticket.to}.`;
   }
 }
