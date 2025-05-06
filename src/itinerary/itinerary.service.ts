@@ -18,11 +18,13 @@ export class ItineraryService {
     private readonly itineraryContext: ItineraryContext,
   ) {}
 
-  createItinerary(tickets: TicketDto[]): any {
-    // { id: string; createdAt: Date }
-    // const mappedTicket = await this.mapTicketCoords(tickets);
-    // const enhanced = enhanceWithDistance(mappedTicket as any);
-    const sddf = this.findItinerary(tickets);
+  async createItinerary(tickets: TicketDto[]): Promise<{
+    id: string;
+    sorted: TicketDto[];
+    searchHeap: string[];
+    createdAt: Date;
+  }> {
+    const searchHeap = this.findItinerary(tickets);
     const sorted = this.sortItinerary(tickets);
     const itineraryId = `itinerary-${uuid().slice(uuid().length - 6, uuid().length - 1)}`;
 
@@ -32,11 +34,11 @@ export class ItineraryService {
       createdAt: new Date(),
     });
 
-    // await this.itineraryRepo.save(itinerary);
+    await this.itineraryRepo.save(itinerary);
     return {
       id: itineraryId,
       sorted,
-      sddf,
+      searchHeap,
       createdAt: itinerary.createdAt,
     };
   }
@@ -55,8 +57,6 @@ export class ItineraryService {
       toSet.add(ticket.to);
     }
 
-    // console.log('fromMap', fromMap);
-
     const start = tickets.find((ticket) => ticket.isOrigin && ticket);
 
     const sorted: TicketDto[] = [];
@@ -65,7 +65,6 @@ export class ItineraryService {
     while (current) {
       sorted.push(current);
       current = findNextTicket(current.to, fromMap);
-      //   current = next!;
     }
 
     return sorted;
