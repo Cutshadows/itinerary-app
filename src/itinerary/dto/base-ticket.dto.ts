@@ -7,6 +7,7 @@ export enum TransportType {
   BUS = 'bus',
   BOAT = 'boat',
   TAXI = 'taxi',
+  TRANFER_LINK = 'transfer_link',
   OTHER = 'other',
 }
 export class BaseTicketDto {
@@ -34,5 +35,5 @@ export class BaseTicketDto {
     type: Boolean,
     default: false,
   })
-  isOrigin?: TransportType;
+  isOrigin?: boolean;
 }

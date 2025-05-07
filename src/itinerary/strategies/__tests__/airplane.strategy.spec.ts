@@ -1,3 +1,4 @@
+import { TransportType } from '../../../itinerary/dto/base-ticket.dto';
 import { AirPlaneStrategy } from '../airplane.strategy';
 
 describe('AirPlaneStrategy', () => {
@@ -8,7 +9,18 @@ describe('AirPlaneStrategy', () => {
   });
 
   it('should return airplane tickets', () => {
-    const tickets = strategy.getTickets();
-    expect(tickets).toEqual(['Boat Ticket #1', 'Boat Ticket #2']);
+    const boatTicket = {
+      from: 'A',
+      to: 'B',
+      flightNumber: 'AB123',
+      seat: 'G1',
+      gate: 10,
+      observation: 'No observation',
+      type: TransportType.AIRPLANE,
+    };
+    const tickets = strategy.render(boatTicket);
+    expect(tickets).toEqual(
+      'From A, board the flight AB123 to B.From gate 10, seat G1. No observation.',
+    );
   });
 });

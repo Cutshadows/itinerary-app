@@ -5,9 +5,6 @@ import { BusTicketDto } from '../dto/bus-ticket.dto';
 @Injectable()
 export class BusStrategy implements TransportStrategy {
   render(ticket: BusTicketDto): string {
-    return (
-      `Board ${ticket.identifier} from ${ticket.from} to ${ticket.to}.\n` +
-      `${ticket.seat ? `In seat ${ticket.seat}.\n` : 'No seat assignment'}`
-    );
+    return `Board ${ticket.identifier} from ${ticket.from} to ${ticket.to}. ${ticket.seat ? `In seat ${ticket.seat}.` : 'No seat assignment'}`;
   }
 }

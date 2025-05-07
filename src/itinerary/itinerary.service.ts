@@ -6,11 +6,15 @@ import { Itinerary } from './entities/Itinerary.entity';
 import { Repository } from 'typeorm';
 import { v4 as uuid } from 'uuid';
 import { TicketDto } from './dto/ticket.dto';
+import { PriorityQueue } from 'typescript-collections';
 
 @Injectable()
 export class ItineraryService {
-  private graph: Record<string, TicketDto> = {};
-  private itinerary: TicketDto[] = [];
+  getTickets(id?: string) {
+    throw new Error('Method not implemented.');
+  }
+  private graph: Record<string, PriorityQueue<string>> = {};
+  private itinerary: string[] = [];
   constructor(
     @InjectRepository(Itinerary)
     private readonly itineraryRepo: Repository<Itinerary>,
@@ -20,11 +24,10 @@ export class ItineraryService {
 
   async createItinerary(tickets: TicketDto[]): Promise<{
     id: string;
-    sorted: TicketDto[];
+    sorted: any[];
     createdAt: Date;
   }> {
-    const sorted = orderItinerary(tickets);
-
+    const sorted = this.orderItinerary(tickets);
     const itineraryId = `itinerary-${uuid().slice(uuid().length - 6, uuid().length - 1)}`;
 
     const itinerary = this.itineraryRepo.create({
@@ -34,97 +37,105 @@ export class ItineraryService {
     });
 
     await this.itineraryRepo.save(itinerary);
+
     return {
       id: itineraryId,
       sorted,
       createdAt: itinerary.createdAt,
     };
   }
-}
-
-function orderItinerary(tickets: TicketDto[]): TicketDto[] {
-  const uniqueTickets = Array.from(
-    new Map(tickets.map((t) => [`${t.from}→${t.to}`, t])).values(),
-  );
-  const fromMap = new Map<string, TicketDto>();
-  const toSet = new Set<string>();
-
-  for (const ticket of uniqueTickets) {
-    fromMap.set(ticket.from, ticket);
-    toSet.add(ticket.to);
+  private deduplicateTickets(tickets: TicketDto[]): TicketDto[] {
+    const uniqueTickets = Array.from(
+      new Map(tickets.map((t) => [`${t.from}→${t.to}`, t])).values(),
+    );
+    return uniqueTickets;
   }
 
-  const usedForms = new Set<string>();
-  const segments: TicketDto[][] = [];
-
-  const starts = uniqueTickets.filter(
-    (ticket) => ticket.isOrigin || !toSet.has(ticket.from),
-  );
-
-  for (const start of starts) {
-    const segment: TicketDto[] = [];
-    let current = start;
-
-    while (current && !usedForms.has(current.from)) {
-      segment.push(current);
-      usedForms.add(current.from);
-      current = fromMap.get(current.to)!;
+  private buildIndex(tickets: TicketDto[]) {
+    const fromMap = new Map<string, TicketDto>();
+    const toSet = new Set<string>();
+    for (const ticket of tickets) {
+      fromMap.set(ticket.from, ticket);
+      toSet.add(ticket.to);
     }
-    segments.push(segment);
+    return { fromMap, toSet };
   }
 
-  const remaining = uniqueTickets.filter((t) => !usedForms.has(t.from));
-  for (const ticket of remaining) {
-    const segment: TicketDto[] = [];
-    let current = ticket;
+  buildSegments(
+    tickets: TicketDto[],
+    fromMap: Map<string, TicketDto>,
+    toSet: Set<string>,
+  ): TicketDto[][] {
+    const usedFroms = new Set<string>();
+    const segments: TicketDto[][] = [];
 
-    while (current && !usedForms.has(current.from)) {
-      segment.push(current);
-      usedForms.add(current.from);
-      current = fromMap.get(current.to)!;
-    }
-    segments.push(segment);
-  }
+    const starts = tickets.filter((t) => t.isOrigin || !toSet.has(t.from));
 
-  const routes: TicketDto[] = [...segments.shift()!];
-
-  while (segments.length > 0) {
-    const last = routes[routes.length - 1].to;
-
-    let bestIndex = -1;
-    for (let i = 0; i < segments.length; i++) {
-      if (sortByHeuristic(last, segments[i][0].from)) {
-        bestIndex = i;
-        break;
+    const traverse = (start: TicketDto) => {
+      const segment: TicketDto[] = [];
+      let current = start;
+      while (current && !usedFroms.has(current.from)) {
+        segment.push(current);
+        usedFroms.add(current.from);
+        current = fromMap.get(current.to)!;
       }
+      return segment;
+    };
+
+    for (const start of starts) segments.push(traverse(start));
+    for (const ticket of tickets.filter((t) => !usedFroms.has(t.from))) {
+      segments.push(traverse(ticket));
     }
-    if (bestIndex >= 0) {
-      const nextSegment = segments.splice(bestIndex, 1)[0];
-      routes.push({
-        from: last,
-        to: nextSegment[0].from,
-        type: 'implicit-transfer',
-        observation: 'Transfer inferred based on location similarity',
-      } as unknown as TicketDto);
-      routes.push(...nextSegment);
-    } else {
-      const diconnected: TicketDto[] = segments.shift()!;
-      if (
-        !diconnected[0].from.includes('Home') &&
-        !diconnected[0].to.includes('Home')
-      ) {
+
+    return segments;
+  }
+
+  connectSegments(segments: TicketDto[][]): TicketDto[] {
+    const routes: TicketDto[] = [...segments.shift()!];
+
+    while (segments.length > 0) {
+      const last = routes[routes.length - 1].to;
+      const index = segments.findIndex((segment) =>
+        sortByHeuristic(last, segment[0].from),
+      );
+
+      if (index >= 0) {
+        const next = segments.splice(index, 1)[0];
         routes.push({
           from: last,
-          to: diconnected[0].from,
-          type: 'gap',
-          observation: 'No direct connection found',
+          to: next[0].from,
+          type: 'implicit-transfer',
+          observation: 'Transfer inferred based on location similarity',
         } as unknown as TicketDto);
-        routes.push(...diconnected);
+        routes.push(...next);
+      } else {
+        const disconnected = segments.shift()!;
+        if (
+          !disconnected[0].from.includes('last') &&
+          !disconnected[0].from.includes('destination') &&
+          !disconnected[0].to.includes('last') &&
+          !disconnected[0].to.includes('destination')
+        ) {
+          routes.push({
+            from: last,
+            to: disconnected[0].from,
+            type: 'gap',
+            observation: 'No direct connection found',
+          } as unknown as TicketDto);
+          routes.push(...disconnected);
+        }
       }
     }
+
+    return routes;
   }
 
-  return routes;
+  orderItinerary(tickets: TicketDto[]): TicketDto[] {
+    const uniqueTickets = this.deduplicateTickets(tickets);
+    const { fromMap, toSet } = this.buildIndex(uniqueTickets);
+    const segments = this.buildSegments(uniqueTickets, fromMap, toSet);
+    return this.connectSegments(segments);
+  }
 }
 
 function sortByHeuristic(locationA: string, locationB: string): boolean {

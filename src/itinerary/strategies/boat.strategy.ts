@@ -5,9 +5,6 @@ import { BoatTicketDto } from '../dto/boat-ticket.dto';
 @Injectable()
 export class BoatStrategy implements TransportStrategy {
   render(ticket: BoatTicketDto): string {
-    return (
-      `From ${ticket.from}, board the boat ${ticket.boatNumber} to ${ticket.to}.\n` +
-      `in the cabin ${ticket.cabinNumber}.`
-    );
+    return `From ${ticket.from}, board the boat ${ticket.boatNumber} to ${ticket.to}. In the cabin ${ticket.cabinNumber}.`;
   }
 }
