@@ -5,6 +5,7 @@ import { BusTicketDto } from './bus-ticket.dto';
 import { TaxiTicketDto } from './taxi-ticket.dto';
 import { TrainTicketDto } from './train-ticket.dto';
 import { TramTicketDto } from './tram-ticket.dto';
+import { TransferLinkDto } from './transfer-link.dto';
 
 export type TicketDto =
   | BaseTicketDto
@@ -13,4 +14,5 @@ export type TicketDto =
   | TramTicketDto
   | BoatTicketDto
   | TaxiTicketDto
+  | TransferLinkDto
   | BusTicketDto;

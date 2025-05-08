@@ -87,6 +87,8 @@ src/itinerary
 ├── itinerary.context.ts
 ```
 
+_I added Factory because it can easily work between different strategies_
+
 ### MongoDB
 
 I decided to move forward through a document database like MongoDB because, I believe it's the best way to manage a dynamic @body ( ticketsDto) in my personal opinion. It could allow extensibility if we add a new ticket type with a different transportType. I configured with typeOrm
@@ -108,6 +110,15 @@ I decided to move forward through a document database like MongoDB because, I be
 imports: [TypeOrmModule.forFeature([Itinerary])],
 # Ensure TypeOrmModule is properly imported
 
+
+```
+
+### Test coverture
+
+```bash
+File                        | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s
+----------------------------|---------|----------|---------|---------|-------------------
+All files                   |   64.12 |    44.73 |    65.3 |   61.29 |
 ```
 
 ## Stay in touch
@@ -117,3 +128,7 @@ imports: [TypeOrmModule.forFeature([Itinerary])],
 ## License
 
 Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+
+```
+
+```

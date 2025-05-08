@@ -6,15 +6,12 @@ import { Itinerary } from './entities/Itinerary.entity';
 import { Repository } from 'typeorm';
 import { v4 as uuid } from 'uuid';
 import { TicketDto } from './dto/ticket.dto';
-import { PriorityQueue } from 'typescript-collections';
 
 @Injectable()
 export class ItineraryService {
   getTickets(id?: string) {
     throw new Error('Method not implemented.');
   }
-  private graph: Record<string, PriorityQueue<string>> = {};
-  private itinerary: string[] = [];
   constructor(
     @InjectRepository(Itinerary)
     private readonly itineraryRepo: Repository<Itinerary>,
@@ -41,7 +38,7 @@ export class ItineraryService {
     return {
       id: itineraryId,
       sorted,
-      createdAt: itinerary.createdAt,
+      createdAt: itinerary?.createdAt,
     };
   }
   private deduplicateTickets(tickets: TicketDto[]): TicketDto[] {

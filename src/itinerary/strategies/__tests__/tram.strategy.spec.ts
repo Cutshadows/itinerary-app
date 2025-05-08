@@ -9,7 +9,7 @@ describe('TramStrategy', () => {
     strategy = new TramStrategy();
   });
 
-  it('should return boat tickets', () => {
+  it('should return tram tickets', () => {
     const tramTicket = {
       from: 'A',
       to: 'B',
