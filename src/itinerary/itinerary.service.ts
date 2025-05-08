@@ -1,16 +1,17 @@
-import { Injectable } from '@nestjs/common';
-import { TicketRenderFactory } from './ticket.render.factory';
-import { ItineraryContext } from './itinerary.context';
-import { TicketDto } from './dto/ticket.dto';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Itinerary } from './entities/Itinerary.entity';
-import { Repository } from 'typeorm';
 import { v4 as uuid } from 'uuid';
+import { Itinerary } from './entities/Itinerary.entity';
+import { ItineraryContext } from './itinerary.context';
+import { Repository } from 'typeorm';
+import { TicketDto } from './dto/ticket.dto';
+import { TicketRenderFactory } from './ticket.render.factory';
 
 @Injectable()
 export class ItineraryService {
-  private graph: Record<string, TicketDto> = {};
-  private itinerary: TicketDto[] = [];
+  getTickets(id?: string) {
+    throw new Error('Method not implemented.');
+  }
   constructor(
     @InjectRepository(Itinerary)
     private readonly itineraryRepo: Repository<Itinerary>,
@@ -18,94 +19,165 @@ export class ItineraryService {
     private readonly itineraryContext: ItineraryContext,
   ) {}
 
+  async getTicketSorted(
+    id: string,
+  ): Promise<
+    Partial<
+      Pick<
+        Itinerary & { sortedList: string[] },
+        'sortedList' | 'createdAt' | 'id'
+      >
+    >
+  > {
+    const itinerary: Itinerary | undefined =
+      (await this.itineraryRepo.findOneBy({
+        id,
+      })) as unknown as Itinerary;
+    if (!itinerary) {
+      throw new NotFoundException(`Itinerary with id ${id} not found`);
+    }
+
+    const sorted = itinerary.sorted?.map((ticket) => {
+      const ticketRender = this.ticketRenderFactory.createTicketRender(
+        ticket.type,
+      )(ticket);
+
+      return ticketRender;
+    });
+    if (itinerary.sorted && itinerary._id) {
+      delete itinerary.sorted;
+      delete itinerary._id;
+    }
+    const itineraryWithRender = {
+      ...itinerary,
+      sortedList: sorted,
+    };
+
+    return itineraryWithRender;
+  }
+
   async createItinerary(tickets: TicketDto[]): Promise<{
     id: string;
-    sorted: TicketDto[];
-    searchHeap: string[];
     createdAt: Date;
   }> {
-    const searchHeap = this.findItinerary(tickets);
-    const sorted = this.sortItinerary(tickets);
+    const sorted = this.orderItinerary(tickets);
     const itineraryId = `itinerary-${uuid().slice(uuid().length - 6, uuid().length - 1)}`;
 
     const itinerary = this.itineraryRepo.create({
       id: itineraryId,
-      //   sorted,
+      sorted,
       createdAt: new Date(),
     });
 
     await this.itineraryRepo.save(itinerary);
+
     return {
       id: itineraryId,
-      sorted,
-      searchHeap,
-      createdAt: itinerary.createdAt,
+      createdAt: itinerary?.createdAt,
     };
   }
+  private deduplicateTickets(tickets: TicketDto[]): TicketDto[] {
+    const uniqueTickets = Array.from(
+      new Map(tickets.map((t) => [`${t.from}→${t.to}`, t])).values(),
+    );
+    return uniqueTickets;
+  }
 
-  sortItinerary(tickets: TicketDto[]): TicketDto[] {
-    const fromMap = new Map<
-      string,
-      TicketDto & {
-        coords?: { from: (number | undefined)[]; to: (number | undefined)[] };
-      }
-    >();
+  private buildIndex(tickets: TicketDto[]) {
+    const fromMap = new Map<string, TicketDto>();
     const toSet = new Set<string>();
-
     for (const ticket of tickets) {
       fromMap.set(ticket.from, ticket);
       toSet.add(ticket.to);
     }
-
-    const start = tickets.find((ticket) => ticket.isOrigin && ticket);
-
-    const sorted: TicketDto[] = [];
-    let current = start;
-
-    while (current) {
-      sorted.push(current);
-      current = findNextTicket(current.to, fromMap);
-    }
-
-    return sorted;
+    return { fromMap, toSet };
   }
-  findItinerary(tickets: TicketDto[]): string[] {
-    const origin =
-      (tickets.map((ticket) => ticket.isOrigin && ticket)[0] as TicketDto) ||
-      tickets[0];
-    const graph: Record<string, TicketDto[]> = {};
-    //   tickets.sort((a, b) => {
-    //     return a.to.localeCompare(b.to);
-    //   });
-    for (const ticket of tickets) {
-      graph[ticket.from] = graph[ticket.from] || [];
-      graph[ticket.from].push(ticket);
-    }
-    const ans: string[] = [];
-    const depthFirstSearch = (from: TicketDto['from']) => {
-      while (graph[from] && graph[from].length) {
-        const tos = graph[from].pop()!;
-        depthFirstSearch(tos.to);
+
+  buildSegments(
+    tickets: TicketDto[],
+    fromMap: Map<string, TicketDto>,
+    toSet: Set<string>,
+  ): TicketDto[][] {
+    const usedFroms = new Set<string>();
+    const segments: TicketDto[][] = [];
+
+    const starts = tickets.filter((t) => t.isOrigin || !toSet.has(t.from));
+
+    const traverse = (start: TicketDto) => {
+      const segment: TicketDto[] = [];
+      let current = start;
+      while (current && !usedFroms.has(current.from)) {
+        segment.push(current);
+        usedFroms.add(current.from);
+        current = fromMap.get(current.to)!;
       }
-      ans.push(from);
+      return segment;
     };
-    depthFirstSearch(origin.from);
-    return ans.reverse();
+
+    for (const start of starts) segments.push(traverse(start));
+    for (const ticket of tickets.filter((t) => !usedFroms.has(t.from))) {
+      segments.push(traverse(ticket));
+    }
+
+    return segments;
+  }
+
+  connectSegments(segments: TicketDto[][]): TicketDto[] {
+    const routes: TicketDto[] = [...segments.shift()!];
+
+    while (segments.length > 0) {
+      const last = routes[routes.length - 1].to;
+      const index = segments.findIndex((segment) =>
+        sortByHeuristic(last, segment[0].from),
+      );
+
+      if (index >= 0) {
+        const next = segments.splice(index, 1)[0];
+        routes.push({
+          from: last,
+          to: next[0].from,
+          type: 'implicit-transfer',
+          observation: 'Transfer inferred based on location similarity',
+        } as unknown as TicketDto);
+        routes.push(...next);
+      } else {
+        const disconnected = segments.shift()!;
+        if (
+          !disconnected[0].from.includes('last') &&
+          !disconnected[0].from.includes('destination') &&
+          !disconnected[0].to.includes('last') &&
+          !disconnected[0].to.includes('destination')
+        ) {
+          routes.push({
+            from: last,
+            to: disconnected[0].from,
+            type: 'gap',
+            observation: 'No direct connection found',
+          } as unknown as TicketDto);
+          routes.push(...disconnected);
+        }
+      }
+    }
+
+    return routes;
+  }
+
+  orderItinerary(tickets: TicketDto[]): TicketDto[] {
+    const uniqueTickets = this.deduplicateTickets(tickets);
+    const { fromMap, toSet } = this.buildIndex(uniqueTickets);
+    const segments = this.buildSegments(uniqueTickets, fromMap, toSet);
+    return this.connectSegments(segments);
   }
 }
 
-function findNextTicket(
-  currentTo: string,
-  map: Map<string, TicketDto>,
-): TicketDto | undefined {
-  if (map.has(currentTo)) return map.get(currentTo);
-
-  // Fallback: look for a partial match (e.g., contains "Venezia")
-  for (const [from, ticket] of map.entries()) {
-    if (from.includes(currentTo) || currentTo.includes(from)) {
-      return ticket;
-    }
-  }
-
-  return undefined;
+function sortByHeuristic(locationA: string, locationB: string): boolean {
+  const normalize = (s: string) =>
+    s
+      .toLowerCase()
+      .replace(/[^a-z\s]/g, '')
+      .split(/\s+/)
+      .filter((t) => t.length > 3);
+  const tokenA = normalize(locationA);
+  const tokenB = normalize(locationB);
+  return tokenA.some((t) => tokenB.includes(t));
 }

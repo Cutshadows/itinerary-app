@@ -12,6 +12,7 @@ import { TicketRenderFactory } from './ticket.render.factory';
 import { ItineraryContext } from './itinerary.context';
 import { BoatStrategy } from './strategies/boat.strategy';
 import { TaxiStrategy } from './strategies/taxi.strategy';
+import { TranferLinkStrategy } from './strategies/transfer-link.strategy';
 
 @Module({
   providers: [
@@ -19,6 +20,7 @@ import { TaxiStrategy } from './strategies/taxi.strategy';
     AirPlaneStrategy,
     TrainStrategy,
     BusStrategy,
+    TranferLinkStrategy,
     BoatStrategy,
     TaxiStrategy,
     TramStrategy,

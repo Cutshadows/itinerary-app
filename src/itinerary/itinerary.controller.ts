@@ -13,6 +13,8 @@ import { TrainTicketDto } from './dto/train-ticket.dto';
 import { BusTicketDto } from './dto/bus-ticket.dto';
 import { TramTicketDto } from './dto/tram-ticket.dto';
 import { ItineraryService } from './itinerary.service';
+import { Itinerary } from './entities/Itinerary.entity';
+import { ItineraryDto } from './dto/itinerary.dto';
 
 @ApiExtraModels(AirplaneTicketDto, TrainTicketDto, BusTicketDto, TramTicketDto)
 @ApiTags('itinerary')
@@ -38,7 +40,6 @@ export class ItineraryController {
   })
   createItinerary(@Body() tickets: TicketDto[]): Promise<{
     id: string;
-    // sorted: TicketDto[];
     createdAt: Date;
   }> {
     return this.itineraryService.createItinerary(tickets);
@@ -50,19 +51,9 @@ export class ItineraryController {
     status: 200,
     description: 'Sorted itinerary',
   })
-  getTickets(@Param('id') id: string): TicketDto[] {
-    return [];
-  }
-
-  @Get(':id/readable')
-  @ApiOperation({
-    summary: 'Retrieve previously sorted itinerary with human readable',
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'Human-readable sorted itinerary',
-  })
-  getTicketSorted(): TicketDto[] {
-    return [];
+  async getTickets(
+    @Param('id') id: string,
+  ): Promise<Partial<Pick<ItineraryDto, 'sortedList' | 'createdAt' | 'id'>>> {
+    return this.itineraryService.getTicketSorted(id);
   }
 }

@@ -8,6 +8,7 @@ import { BusStrategy } from './strategies/bus.strategy';
 import { TrainStrategy } from './strategies/train.strategy';
 import { TramStrategy } from './strategies/tram.strategy';
 import { TaxiStrategy } from './strategies/taxi.strategy';
+import { TranferLinkStrategy } from './strategies/transfer-link.strategy';
 
 @Injectable()
 export class TicketRenderFactory {
@@ -19,6 +20,7 @@ export class TicketRenderFactory {
     private readonly train: TrainStrategy,
     private readonly tram: TramStrategy,
     private readonly taxi: TaxiStrategy,
+    private readonly transferLink: TranferLinkStrategy,
   ) {}
 
   createTicketRender(ticketType: TransportType) {
@@ -51,6 +53,11 @@ export class TicketRenderFactory {
       case TransportType.TAXI:
         return (ticket: TicketDto): string => {
           this.context.setStrategy(this.taxi);
+          return this.context.render(ticket);
+        };
+      case TransportType.TRANFER_LINK:
+        return (ticket: TicketDto): string => {
+          this.context.setStrategy(this.transferLink);
           return this.context.render(ticket);
         };
       case TransportType.OTHER:

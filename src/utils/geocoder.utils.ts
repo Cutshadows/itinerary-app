@@ -2,19 +2,21 @@ import * as NeoGeocoder from 'node-geocoder';
 
 const options = {
   provider: 'openstreetmap',
-  format: null,
+  format: 'string',
 } as NeoGeocoder.Options;
 
 const geocoder = NeoGeocoder(options);
 
 const getCoordinates = async (address: string) => {
-  const res = await geocoder.geocode(address);
+  const result = await geocoder.geocode(address);
+  console.log('GeoCodeResult', result);
 
-  if (res.length === 0) {
-    console.error(`No coordinates found : ${address}`);
-    // throw new Error('No coordinates found');
+  if (!result || result.length === 0) {
+    return { [address]: [undefined, undefined] };
   }
-  return res[0];
+  const { latitude, longitude } = result[0];
+
+  return { [address]: [latitude, longitude] };
 };
 
 export { getCoordinates };
