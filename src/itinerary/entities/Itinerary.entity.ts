@@ -4,11 +4,14 @@ import { TicketDto } from '../dto/ticket.dto';
 @Entity('itineraries')
 export class Itinerary {
   @ObjectIdColumn()
-  id: ObjectId;
+  _id?: ObjectId;
 
   @Column()
-  sorted: TicketDto[];
+  id: string;
 
-  @Column({ default: new Date() })
+  @Column()
+  sorted?: TicketDto[];
+
+  @Column()
   createdAt: Date;
 }

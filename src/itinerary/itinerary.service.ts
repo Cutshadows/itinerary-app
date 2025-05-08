@@ -1,11 +1,11 @@
-import { Injectable } from '@nestjs/common';
-import { TicketRenderFactory } from './ticket.render.factory';
-import { ItineraryContext } from './itinerary.context';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Itinerary } from './entities/Itinerary.entity';
-import { Repository } from 'typeorm';
 import { v4 as uuid } from 'uuid';
+import { Itinerary } from './entities/Itinerary.entity';
+import { ItineraryContext } from './itinerary.context';
+import { Repository } from 'typeorm';
 import { TicketDto } from './dto/ticket.dto';
+import { TicketRenderFactory } from './ticket.render.factory';
 
 @Injectable()
 export class ItineraryService {
@@ -19,9 +19,45 @@ export class ItineraryService {
     private readonly itineraryContext: ItineraryContext,
   ) {}
 
+  async getTicketSorted(
+    id: string,
+  ): Promise<
+    Partial<
+      Pick<
+        Itinerary & { sortedList: string[] },
+        'sortedList' | 'createdAt' | 'id'
+      >
+    >
+  > {
+    const itinerary: Itinerary | undefined =
+      (await this.itineraryRepo.findOneBy({
+        id,
+      })) as unknown as Itinerary;
+    if (!itinerary) {
+      throw new NotFoundException(`Itinerary with id ${id} not found`);
+    }
+
+    const sorted = itinerary.sorted?.map((ticket) => {
+      const ticketRender = this.ticketRenderFactory.createTicketRender(
+        ticket.type,
+      )(ticket);
+
+      return ticketRender;
+    });
+    if (itinerary.sorted && itinerary._id) {
+      delete itinerary.sorted;
+      delete itinerary._id;
+    }
+    const itineraryWithRender = {
+      ...itinerary,
+      sortedList: sorted,
+    };
+
+    return itineraryWithRender;
+  }
+
   async createItinerary(tickets: TicketDto[]): Promise<{
     id: string;
-    sorted: any[];
     createdAt: Date;
   }> {
     const sorted = this.orderItinerary(tickets);
@@ -37,7 +73,6 @@ export class ItineraryService {
 
     return {
       id: itineraryId,
-      sorted,
       createdAt: itinerary?.createdAt,
     };
   }

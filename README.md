@@ -19,7 +19,6 @@ TypeScript itinerary Kevin McCallister (Lost in Europe).
 ```bash
  (POST) api/itinerary
  (GET) api/itinerary/:id
- (GET) api/itinerary/:id/readable
 ```
 
 ## Project setup
@@ -87,7 +86,86 @@ src/itinerary
 ├── itinerary.context.ts
 ```
 
+```bash
+curl --location 'localhost:3030/api/itinerary' \
+--header 'Content-Type: application/json' \
+--data '[
+    {
+        "from": "Ski Arlberg",
+        "to": "St. Anton am Arlberg Bahnhof",
+        "type": "other",
+        "isOrigin": true
+    },
+    {
+        "from": "Bologna Guglielmo Marconi Airport",
+        "fligthNumber": "AF1229",
+        "to": "Paris CDG Airport",
+        "gate": 22,
+        "seat": "10A",
+        "type": "airplane",
+        "observation": "Self-check-in luggage at counter"
+    },
+    {
+        "from": "St. Anton am Arlberg Bahnhof",
+        "to": "Innsbruck Hbf",
+        "type": "train",
+        "trainNumber": "RJX 765",
+        "platform": "3",
+        "seat": "17C"
+    },
+    {
+        "from": "Innsbruck Hbf",
+        "to": "Innsbruck Airport",
+        "type": "tram",
+        "tramNumber": "S5"
+    },
+    {
+        "from": "Innsbruck Airport",
+        "fligthNumber": "AA904",
+        "to": "Venezia Airport",
+        "gate": 10,
+        "seat": "18A",
+        "type": "airplane",
+        "observation": "Self-check-in luggage at counter"
+    },
+    {
+        "from": "Paris CDG Airport",
+        "fligthNumber": "AF136",
+        "to": "Chicago O'\''Hare",
+        "gate": 32,
+        "seat": "10A",
+        "type": "airplane",
+        "observation": "Luggage will transfer automatically from the last flight"
+    },
+    {
+        "from": "Chicago O'\''Hare",
+        "to": "last destination reached",
+        "type": "other"
+    }
+
+]'
+```
+
 _I added Factory because it can easily work between different strategies_
+
+## Output Itinerary
+
+```bash
+{
+    "id": "itinerary-5ad1b",
+    "createdAt": "2025-05-08T20:56:16.454Z",
+    "sortedList": [
+        "Take taxi from Ski Arlberg to St. Anton am Arlberg Bahnhof.",
+        "Board RJX 765, Platform 3 from St. Anton am Arlberg Bahnhof to Innsbruck Hbf.seat number 17C.",
+        "Board S5, from Innsbruck Hbf to Innsbruck Airport.",
+        "From Innsbruck Airport, board the flight undefined to Venezia Airport.From gate 10, seat 18A. Self-check-in luggage at counter.",
+        "Take the transfer undefined, from Venezia Airport to Bologna Guglielmo Marconi Airport.",
+        "From Bologna Guglielmo Marconi Airport, board the flight undefined to Paris CDG Airport.From gate 22, seat 10A. Self-check-in luggage at counter.",
+        "From Paris CDG Airport, board the flight undefined to Chicago O'Hare.From gate 32, seat 10A. Luggage will transfer automatically from the last flight.",
+        "Take taxi from Chicago O'Hare to last destination reached."
+    ]
+}
+```
 
 ### MongoDB
 

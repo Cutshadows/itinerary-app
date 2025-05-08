@@ -7,7 +7,7 @@ export enum TransportType {
   BUS = 'bus',
   BOAT = 'boat',
   TAXI = 'taxi',
-  TRANFER_LINK = 'transfer_link',
+  TRANFER_LINK = 'implicit-transfer',
   OTHER = 'other',
 }
 export class BaseTicketDto {
