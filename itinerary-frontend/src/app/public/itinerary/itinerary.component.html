@@ -1,0 +1,7 @@
+<section class="w-1/2 items-center text-start self-center align-middle justify-center bg-gray-100">
+	<ul>
+		<li *ngFor="let ticket of itinerary?.sortedList; let i = index">
+			<span>{{i + 1}}. {{ ticket }}</span>
+		</li>
+	</ul>
+</section>

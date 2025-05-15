@@ -1,0 +1,19 @@
+<main class="flex flex-auto flex-col items-center justify-center bg-gray-100">
+	<div class="flex flex-col items-center justify-center w-full max-w-4xl p-4">
+		<h1 class="text-3xl font-bold text-gray-800">Itinerary App</h1>
+		<p class="mt-2 text-lg text-gray-600">Welcome to the Itinerary App!</p>
+	</div>
+	<app-tabs [componentType]="currentComponent"> </app-tabs>
+
+	<div class="flex flex-row space-x-2 items-center justify-center w-full max-w-4xl p-4">
+		<button (click)="currentComponent = 'tickets'"
+			class="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
+			Go to Tickets
+		</button>
+		<button (click)="currentComponent = 'itinerary'"
+			class="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
+			Go to Itinerary
+		</button>
+	</div>
+
+</main>
